@@ -77,7 +77,7 @@ h1 span { color: #00bcd4; }
 var noBtn = document.getElementById('btnNo');
 var yesBtn = document.getElementById('btnYes');
 var card = document.getElementById('card');
-var scale = 1;
+var count = 0;
 
 function randInCard() {
     var pad = 10;
@@ -102,13 +102,27 @@ function randInCard() {
 }
 
 function flee() {
+    count++;
     var p = randInCard();
     noBtn.style.position = 'absolute';
     noBtn.style.left = p.x + 'px';
     noBtn.style.top = p.y + 'px';
     noBtn.style.display = 'block';
-    scale += 0.08;
-    yesBtn.style.transform = 'scale(' + scale + ')';
+
+    if (count >= 15) {
+        yesBtn.style.position = 'fixed';
+        yesBtn.style.left = '0';
+        yesBtn.style.top = '0';
+        yesBtn.style.width = '100vw';
+        yesBtn.style.height = '100vh';
+        yesBtn.style.borderRadius = '0';
+        yesBtn.style.fontSize = '60px';
+        yesBtn.style.zIndex = '999999';
+        yesBtn.style.transform = 'none';
+        noBtn.style.display = 'none';
+    } else {
+        yesBtn.style.transform = 'scale(' + (1 + count * 0.12) + ')';
+    }
 }
 
 noBtn.addEventListener('mouseenter', flee);
