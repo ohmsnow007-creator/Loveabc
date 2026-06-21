@@ -75,84 +75,50 @@ h1 span { color: #00bcd4; }
     </div>
 </div>
 <script>
-(function() {
-    const noBtn = document.getElementById('btnNo');
-    const yesBtn = document.getElementById('btnYes');
-    let first = true;
+var noBtn = null, yesBtn = null, first = true;
 
-    function getBtnRect(el) {
-        return el.getBoundingClientRect();
+function overlap(r1, r2) {
+    return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
+}
+
+function findPos() {
+    var bw = noBtn.offsetWidth, bh = noBtn.offsetHeight, pad = 15;
+    var maxX = window.innerWidth - bw - pad, maxY = window.innerHeight - bh - pad;
+    if (maxX < pad) maxX = pad; if (maxY < pad) maxY = pad;
+    var tries = 0;
+    while (tries++ < 80) {
+        var x = pad + Math.random() * maxX;
+        var y = pad + Math.random() * maxY;
+        noBtn.style.left = x + 'px'; noBtn.style.top = y + 'px';
+        if (!overlap(noBtn.getBoundingClientRect(), yesBtn.getBoundingClientRect())) return { x: x, y: y };
     }
-
-    function overlap(r1, r2) {
-        return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
+    if (yesBtn) {
+        var yr = yesBtn.getBoundingClientRect();
+        if (yr.right + bw + pad < window.innerWidth) return { x: yr.right + pad, y: Math.max(pad, Math.random() * (window.innerHeight - bh - pad)) };
     }
+    return { x: pad, y: pad };
+}
 
-    function findPos() {
-        const bw = noBtn.offsetWidth;
-        const bh = noBtn.offsetHeight;
-        const pad = 10;
-        const maxX = window.innerWidth - bw - pad;
-        const maxY = window.innerHeight - bh - pad;
-        if (maxX < pad || maxY < pad) return { x: pad, y: pad };
+function moveNo() {
+    if (!first) { var p = findPos(); noBtn.style.left = p.x + 'px'; noBtn.style.top = p.y + 'px'; }
+}
 
-        for (let tries = 0; tries < 100; tries++) {
-            const x = pad + Math.random() * (maxX - pad);
-            const y = pad + Math.random() * (maxY - pad);
-            noBtn.style.left = x + 'px';
-            noBtn.style.top = y + 'px';
-
-            // force layout
-            const nr = noBtn.getBoundingClientRect();
-            const yr = yesBtn.getBoundingClientRect();
-
-            if (!overlap(nr, yr)) {
-                return { x, y };
-            }
-        }
-        // fallback: top-left corner
-        return { x: pad, y: pad };
-    }
-
-    function moveNo() {
-        const pos = findPos();
-        noBtn.style.left = pos.x + 'px';
-        noBtn.style.top = pos.y + 'px';
-    }
-
-    function resetNo() {
-        const wrap = document.getElementById('btnWrap');
-        const wr = wrap.getBoundingClientRect();
-        const yesRect = yesBtn.getBoundingClientRect();
-        // place no button to the right of yes button
-        const x = yesRect.right - wr.left + 10;
-        const y = (wr.height - noBtn.offsetHeight) / 2;
-        noBtn.style.left = x + 'px';
-        noBtn.style.top = y + 'px';
-        noBtn.style.position = 'absolute';
-    }
-
-    // events
-    noBtn.addEventListener('mouseenter', function(e) {
-        if (!first) moveNo();
+document.addEventListener('DOMContentLoaded', function() {
+    noBtn = document.getElementById('btnNo');
+    yesBtn = document.getElementById('btnYes');
+    if (!noBtn || !yesBtn) return;
+    noBtn.style.position = 'absolute';
+    noBtn.style.left = '9999px'; // offscreen initially
+    noBtn.style.top = '9999px';
+    requestAnimationFrame(function() {
+        first = false;
+        noBtn.style.position = 'fixed';
+        moveNo();
     });
-    noBtn.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        if (!first) moveNo();
-    }, { passive: false });
-    window.addEventListener('resize', function() {
-        if (!first) moveNo();
-    });
-
-    // initial position
-    window.onload = function() {
-        setTimeout(function() {
-            noBtn.style.position = 'fixed';
-            first = false;
-            moveNo();
-        }, 100);
-    };
-})();
+    noBtn.addEventListener('mouseenter', moveNo);
+    noBtn.addEventListener('touchstart', function(e) { e.preventDefault(); moveNo(); }, { passive: false });
+    window.addEventListener('resize', moveNo);
+});
 
 function done() {
     document.getElementById('btnNo').style.display = 'none';
