@@ -12,7 +12,7 @@ body {
     display: flex; justify-content: center; align-items: center;
     font-family: 'Arial', sans-serif; overflow: hidden;
     user-select: none; -webkit-user-select: none;
-    touch-action: none; position: relative;
+    position: relative;
     padding: 16px;
 }
 .card {
@@ -37,8 +37,8 @@ h1 span { color: #00bcd4; }
 .btn-no {
     background: #f0f0f0; color: #999; border: 2px solid #ddd;
     padding: 12px 30px; border-radius: 50px; font-size: 16px; cursor: pointer;
-    white-space: nowrap; z-index: 3; position: fixed;
-    touch-action: none; transition: none;
+    white-space: nowrap; z-index: 9999; position: fixed;
+    touch-action: none; transition: none; box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 .result { display: none; animation: popIn 0.6s ease; padding: 10px 0; }
 .result .big { font-size: 64px; }
@@ -75,49 +75,50 @@ h1 span { color: #00bcd4; }
     </div>
 </div>
 <script>
-var noBtn = null, yesBtn = null, first = true;
-
-function overlap(r1, r2) {
-    return !(r1.right <= r2.left || r1.left >= r2.right || r1.bottom <= r2.top || r1.top >= r2.bottom);
-}
-
-function findPos() {
-    var bw = noBtn.offsetWidth, bh = noBtn.offsetHeight, pad = 15;
-    var maxX = window.innerWidth - bw - pad, maxY = window.innerHeight - bh - pad;
-    if (maxX < pad) maxX = pad; if (maxY < pad) maxY = pad;
-    var tries = 0;
-    while (tries++ < 80) {
-        var x = pad + Math.random() * maxX;
-        var y = pad + Math.random() * maxY;
-        noBtn.style.left = x + 'px'; noBtn.style.top = y + 'px';
-        if (!overlap(noBtn.getBoundingClientRect(), yesBtn.getBoundingClientRect())) return { x: x, y: y };
-    }
-    if (yesBtn) {
-        var yr = yesBtn.getBoundingClientRect();
-        if (yr.right + bw + pad < window.innerWidth) return { x: yr.right + pad, y: Math.max(pad, Math.random() * (window.innerHeight - bh - pad)) };
-    }
-    return { x: pad, y: pad };
-}
-
-function moveNo() {
-    if (!first) { var p = findPos(); noBtn.style.left = p.x + 'px'; noBtn.style.top = p.y + 'px'; }
-}
+var noBtn, yesBtn, moving = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     noBtn = document.getElementById('btnNo');
     yesBtn = document.getElementById('btnYes');
-    if (!noBtn || !yesBtn) return;
-    noBtn.style.position = 'absolute';
-    noBtn.style.left = '9999px'; // offscreen initially
-    noBtn.style.top = '9999px';
-    requestAnimationFrame(function() {
-        first = false;
-        noBtn.style.position = 'fixed';
-        moveNo();
-    });
-    noBtn.addEventListener('mouseenter', moveNo);
-    noBtn.addEventListener('touchstart', function(e) { e.preventDefault(); moveNo(); }, { passive: false });
-    window.addEventListener('resize', moveNo);
+    if (!noBtn) return;
+
+    function overlap(a, b) {
+        return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+    }
+
+    function escape() {
+        if (moving) return;
+        moving = true;
+        var bw = noBtn.offsetWidth, bh = noBtn.offsetHeight;
+        var maxX = window.innerWidth - bw, maxY = window.innerHeight - bh;
+        var best = null, bestDist = -1;
+        var yr = yesBtn ? yesBtn.getBoundingClientRect() : null;
+        for (var i = 0; i < 40; i++) {
+            var x = Math.max(5, Math.random() * (maxX - 5));
+            var y = Math.max(5, Math.random() * (maxY - 5));
+            if (yr) {
+                var nx = x + bw, ny = y + bh;
+                var overlapX = !(x > yr.right || nx < yr.left);
+                var overlapY = !(y > yr.bottom || ny < yr.top);
+                if (overlapX && overlapY) continue;
+            }
+            var dist = Math.min(x, y, window.innerWidth - x - bw, window.innerHeight - y - bh);
+            if (dist > bestDist) { bestDist = dist; best = { x: x, y: y }; }
+        }
+        if (!best) best = { x: 5, y: 5 };
+        noBtn.style.left = best.x + 'px';
+        noBtn.style.top = best.y + 'px';
+        noBtn.style.display = 'block';
+        moving = false;
+    }
+
+    noBtn.style.position = 'fixed';
+    noBtn.style.display = 'block';
+    escape();
+
+    noBtn.addEventListener('mouseenter', escape);
+    noBtn.addEventListener('touchstart', function(e) { e.preventDefault(); escape(); }, { passive: false });
+    window.addEventListener('resize', escape);
 });
 
 function done() {
