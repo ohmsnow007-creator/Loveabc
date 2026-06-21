@@ -77,6 +77,7 @@ h1 span { color: #00bcd4; }
 var noBtn = document.getElementById('btnNo');
 var yesBtn = document.getElementById('btnYes');
 var card = document.getElementById('card');
+var scale = 1;
 
 function randInCard() {
     var pad = 10;
@@ -106,6 +107,8 @@ function flee() {
     noBtn.style.left = p.x + 'px';
     noBtn.style.top = p.y + 'px';
     noBtn.style.display = 'block';
+    scale += 0.08;
+    yesBtn.style.transform = 'scale(' + scale + ')';
 }
 
 noBtn.addEventListener('mouseenter', flee);
